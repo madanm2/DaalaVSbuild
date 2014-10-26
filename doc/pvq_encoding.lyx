@@ -1,0 +1,889 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 0
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+PVQ Encoding with Non-Uniform Distribution
+\end_layout
+
+\begin_layout Author
+Jean-Marc Valin, Timothy B.
+ Terriberry
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+The pyramid vector quantizer (PVQ) is common form of algebraic vector quantizati
+on.
+ It is useful in the context of both audio and video compression.
+ The PVQ codebook is defined
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+S\left(N,K\right)=\left\{ \mathbf{y}\in\mathbb{Z^{N}}:\sum_{i=0}^{N-1}\left|y_{i}\right|=K\right\} \ ,
+\end{equation}
+
+\end_inset
+
+the set of all integer vectors in 
+\begin_inset Formula $N$
+\end_inset
+
+ dimensions for which the sum of absolute values equals 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ When all codevectors are considered to have equal probability, several
+ methods
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Fischer,FPC"
+
+\end_inset
+
+ exist to convert between any codevector and an index 
+\begin_inset Formula $J$
+\end_inset
+
+ in the range 
+\begin_inset Formula $[0,\, V(N,K)-1]$
+\end_inset
+
+, where 
+\begin_inset Formula $V(N,K)$
+\end_inset
+
+ is the number of elements in 
+\begin_inset Formula $S(N,K)$
+\end_inset
+
+.
+ The index is then easily coded in a bit-stream, possibly with the use of
+ a range coder
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RFC6716"
+
+\end_inset
+
+ to allow for fractional bits since 
+\begin_inset Formula $V(N,K)$
+\end_inset
+
+ is generally not a power of two.
+ The equal-probability case is common for audio.
+ For video, transform coefficients (e.g.
+ DCT) or any prediction residual for a block tend to have widely different
+ distributions.
+ For this reason, using a uniform probability model.
+ This document proposes a way to efficiently encode the result of PVQ quantizati
+on with such non-uniform distributions.
+\end_layout
+
+\begin_layout Section
+Non-Uniform Distribution
+\end_layout
+
+\begin_layout Standard
+The non-uniform probability distribution of the codevectors requires building
+ a probability model.
+ For any codebook of reasonable size, explicitly modelling the distribution
+ of 
+\begin_inset Formula $J$
+\end_inset
+
+ itself is impractical since 
+\begin_inset Formula $V(N,K)$
+\end_inset
+
+ can easily exceed 32
+\begin_inset space ~
+\end_inset
+
+bits.
+ Instead, we use parametric models for the distribution of 
+\begin_inset Formula $\left|y_{i}\right|$
+\end_inset
+
+ as a function of 
+\begin_inset Formula $i$
+\end_inset
+
+.
+ Sections
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Coefficient-model"
+
+\end_inset
+
+ and
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Run-Length-Model"
+
+\end_inset
+
+ present two possible models for encoding non-uniform PVQ parameters.
+ Both models assume the use of a range/arithmetic coder, ideally one that
+ is capable of encoding non-binary symbols.
+ In most cases, the probability distribution functions (pdf) can be stored
+ in a lookup table in the form of cumulative distribution functions (cdf)
+ that can be used directly by the encoder and decoder.
+ 
+\end_layout
+
+\begin_layout Subsection
+Coefficient Magnitude Model
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Coefficient-model"
+
+\end_inset
+
+The coefficient magnitude (CM) model is based on the expected absolute value
+ of the coefficient 
+\begin_inset Formula $i$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\sigma_{i}=E\left\{ \left|y_{i}\right|\right\} =\sum_{k=0}^{\infty}p_{i}(k)\ ,
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $p_{i}\left(k\right)$
+\end_inset
+
+ is the probability that 
+\begin_inset Formula $\left|y_{i}\right|=k$
+\end_inset
+
+.
+ We assume that 
+\begin_inset Formula $y$
+\end_inset
+
+ is the result of quantizing 
+\begin_inset Formula $x$
+\end_inset
+
+ to the nearest integer, where 
+\begin_inset Formula $x$
+\end_inset
+
+ follows a Laplace distribution
+\begin_inset Formula 
+\begin{equation}
+p\left(x\right)=r^{-\left|x\right|}\ .
+\end{equation}
+
+\end_inset
+
+Assuming the positive quantization thresholds are 
+\begin_inset Formula $\theta+k,\, k\in\mathbb{N}$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{equation}
+p\left(k\right)=\left\{ \begin{array}{ll}
+1-r^{\theta} & ,\ k=0\\
+r^{\theta}\left(1-r\right)r^{k-1}\quad & ,\ k\neq0
+\end{array}\right.\ .
+\end{equation}
+
+\end_inset
+
+The value of 
+\begin_inset Formula $r$
+\end_inset
+
+ is obtained by modelling 
+\begin_inset Formula $\sigma_{i}$
+\end_inset
+
+.
+ By assuming 
+\begin_inset Formula $\theta=1$
+\end_inset
+
+, we can have a simple relation for 
+\begin_inset Formula $r$
+\end_inset
+
+ 
+\begin_inset Formula 
+\begin{equation}
+r=\frac{\sigma_{i}}{1+\sigma_{i}}\ .\label{eq:r-vs-sigma}
+\end{equation}
+
+\end_inset
+
+We can still use 
+\begin_inset Formula $\theta\neq1$
+\end_inset
+
+ to model 
+\begin_inset Formula $p\left(k\right)$
+\end_inset
+
+ itself, in which case
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:r-vs-sigma"
+
+\end_inset
+
+ becomes an approximation.
+ Typically, 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is in the range 
+\begin_inset Formula $\left[\frac{1}{2},1\right]$
+\end_inset
+
+.
+ For efficiency reasons, we pre-compute the cdf corresponding to 
+\begin_inset Formula $p\left(k\right)$
+\end_inset
+
+ for different values of 
+\begin_inset Formula $r$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If all values 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ are identically distributed, then all expectiations 
+\begin_inset Formula $\sigma_{i}$
+\end_inset
+
+ are equal and simply 
+\begin_inset Formula $\sigma_{i}=K/N$
+\end_inset
+
+.
+ In practice, we assume that the values 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ are in decreasing order of expected value and make the approximation 
+\begin_inset Formula 
+\begin{equation}
+\sigma_{0}=\alpha K/N\ ,
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ represents how uneven the distributions are (
+\begin_inset Formula $\alpha=1$
+\end_inset
+
+ corresponds to identical distributions).
+ Knowing 
+\begin_inset Formula $\alpha$
+\end_inset
+
+, we can obtain 
+\begin_inset Formula $\sigma_{0}$
+\end_inset
+
+, 
+\begin_inset Formula $r_{0}$
+\end_inset
+
+ and thus 
+\begin_inset Formula $p_{0}\left(k\right)$
+\end_inset
+
+, making it possible to encode (and decode using the same process) 
+\begin_inset Formula $y_{0}$
+\end_inset
+
+.
+ Knowing the value of 
+\begin_inset Formula $y_{0}$
+\end_inset
+
+, we can encode 
+\begin_inset Formula $y_{1}$
+\end_inset
+
+ using
+\begin_inset Formula 
+\begin{align}
+N^{\left(1\right)} & =N-1\nonumber \\
+K^{\left(1\right)} & =K-\left|y_{0}\right|\ .
+\end{align}
+
+\end_inset
+
+The process can be applied recursively until 
+\begin_inset Formula $K=0$
+\end_inset
+
+ or 
+\begin_inset Formula $N=1$
+\end_inset
+
+.
+ The coefficient 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is assumed constant across a vector and adapted between vectors based on
+ the observed expectation 
+\begin_inset Formula $\sigma_{i}$
+\end_inset
+
+ as a function of 
+\begin_inset Formula $K$
+\end_inset
+
+ and 
+\begin_inset Formula $N$
+\end_inset
+
+.
+ Similar to a linear regression, we have 
+\begin_inset Formula 
+\begin{equation}
+\alpha=\frac{S_{y}}{S_{E}}\ ,
+\end{equation}
+
+\end_inset
+
+where for new vector, we update 
+\begin_inset Formula $S_{y}$
+\end_inset
+
+ and 
+\begin_inset Formula $S_{E}$
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{align}
+S_{y} & \leftarrow\left(1-\eta\right)S_{y}+\eta\sum\left|y_{i}\right|\\
+S_{E} & \leftarrow\left(1-\eta\right)S_{E}+\eta\sum\left(K^{\left(i\right)}/N^{\left(i\right)}\right)\ ,
+\end{align}
+
+\end_inset
+
+where 
+\begin_inset Formula $\eta$
+\end_inset
+
+ controls the adaptation rate.
+ 
+\end_layout
+
+\begin_layout Standard
+The total number of symbols coded with this approach is equal to the position
+ 
+\begin_inset Formula $i_{last}$
+\end_inset
+
+ of the last non-zero component of 
+\begin_inset Formula $\mathbf{y}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Run-Length Model
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Run-Length-Model"
+
+\end_inset
+
+For long sparse vectors, the method in Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Coefficient-model"
+
+\end_inset
+
+ is inefficient in terms of symbols coded.
+ In those cases the run-length (RL) model models 
+\begin_inset Formula $q(n)$
+\end_inset
+
+, the probability of 
+\begin_inset Formula $y_{n}$
+\end_inset
+
+ being the first non-zero coefficient in 
+\begin_inset Formula $\mathbf{y}$
+\end_inset
+
+, as a truncated exponential distribution
+\begin_inset Formula 
+\begin{equation}
+q\left(n\right)=C_{1}\left\{ \begin{array}{ll}
+r^{-n}\quad & ,\ n<N\\
+0 & ,\ n\geq N
+\end{array}\right.\ ,
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $C_{1}$
+\end_inset
+
+is a normalization constant.
+ We then model the expected value of 
+\begin_inset Formula $q(n)$
+\end_inset
+
+ as 
+\begin_inset Formula 
+\begin{equation}
+\sigma_{n}=E\left[q\left(n\right)\right]=\beta\cdot\frac{N}{K}\ ,
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\beta=1$
+\end_inset
+
+ represents the case where non-zero coefficients are distributed evenly
+ in the vector (typically, 
+\begin_inset Formula $\beta<1$
+\end_inset
+
+).
+ 
+\end_layout
+
+\begin_layout Standard
+The relationship between 
+\begin_inset Formula $\sigma_{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $r$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\begin{equation}
+\sigma_{n}=\frac{r^{N}-Nr+N-1}{r^{N-1}\left(1-r\right)^{N}}\ ,
+\end{equation}
+
+\end_inset
+
+so computing 
+\begin_inset Formula $r$
+\end_inset
+
+ from 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\sigma_{n}$
+\end_inset
+
+ is not easy.
+ We use the approximation 
+\begin_inset Formula 
+\begin{equation}
+r\approx\frac{\sigma_{n}}{1+\sigma_{n}}+\frac{8\sigma_{n}^{2}}{\left(N+1\right)\left(N-1\right)^{2}}\ .
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Once the position 
+\begin_inset Formula $n$
+\end_inset
+
+ of the first non-zero coefficient is coded, one pulse is subtracted from
+ that position and the process is restarted with
+\begin_inset Formula 
+\begin{align}
+N^{(1)} & =N-n\nonumber \\
+K^{(1)} & =K-1\ .
+\end{align}
+
+\end_inset
+
+If multiple pulses are present at a certain position, then we encode a position
+ of zero for each pulse that follows the first pulse.
+ 
+\end_layout
+
+\begin_layout Standard
+Because the sign is fixed once  a pulse is already present at a certain
+ position, the probability of adding a pulse is divided by two.
+ The distribution then becomes
+\begin_inset Formula 
+\begin{equation}
+q(n)=C_{2}\left\{ \begin{array}{ll}
+1/2\quad & ,\ n=0\\
+r^{-n} & ,\ 0<n<N\\
+0 & ,\ n\geq N
+\end{array}\right..
+\end{equation}
+
+\end_inset
+
+The 
+\begin_inset Formula $\beta$
+\end_inset
+
+ parameters is adapted in a similar way as the 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ parameter in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Coefficient-model"
+
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\beta=\frac{S_{p}}{S_{N}}\ ,
+\end{equation}
+
+\end_inset
+
+where for each new vector, we update 
+\begin_inset Formula $S_{p}$
+\end_inset
+
+ and 
+\begin_inset Formula $S_{N}$
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{align}
+S_{p} & \leftarrow\left(1-\eta\right)S_{p}+\eta\sum n^{(i)}K^{(i)}\\
+S_{N} & \leftarrow\left(1-\eta\right)S_{N}+\eta\sum N^{\left(i\right)}\ ,
+\end{align}
+
+\end_inset
+
+where 
+\begin_inset Formula $\eta$
+\end_inset
+
+ controls the adaptation rate.
+ 
+\end_layout
+
+\begin_layout Subsection
+Model Combinations
+\end_layout
+
+\begin_layout Standard
+It is possible to combine the CM and RL models to improve coding performance
+ and computational efficiency.
+ For small values of 
+\begin_inset Formula $K$
+\end_inset
+
+, the RL model tends to have similar efficiency as the CM model, but a much
+ lower complexity due to the smaller number of symbols.
+ For larger 
+\begin_inset Formula $K$
+\end_inset
+
+ values, the RL model tends to lose efficiency and becomes more complex.
+ Because 
+\begin_inset Formula $K$
+\end_inset
+
+ is known in advance, the encoder can choose between CM and RL at run-time
+ based on 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ The decoder has access to the same information and can thus choose the
+ same model as the encoder.
+ It is even possible to use both models on the same vector, switching from
+ from CM to RL once 
+\begin_inset Formula $K^{\left(n\right)}$
+\end_inset
+
+ becomes smaller than an encoder-decoder-agreed threshold 
+\begin_inset Formula $K_{T}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Coding K
+\end_layout
+
+\begin_layout Standard
+In some contexts, the value of 
+\begin_inset Formula $K$
+\end_inset
+
+ is agreed on between the encoder and decoder.
+ If not, then we need to code 
+\begin_inset Formula $K$
+\end_inset
+
+ explicitly.
+ In the proposed implementation, the pdf of 
+\begin_inset Formula $K$
+\end_inset
+
+ is adapted based on the data for 
+\begin_inset Formula $K<15$
+\end_inset
+
+.
+ For 
+\begin_inset Formula $K\geq15$
+\end_inset
+
+, an exponentially-decaying distribution is assumed.
+ The model is also conditioned on the expected value of 
+\begin_inset Formula $K$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "PVQ-draft"
+
+\end_inset
+
+J.-M.
+ Valin, 
+\begin_inset Quotes eld
+\end_inset
+
+Pyramid Vector Quantization for Video Coding
+\begin_inset Quotes erd
+\end_inset
+
+, IETF draft, 2013.
+ http://tools.ietf.org/html/draft-valin-videocodec-pvq-00
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "Fischer"
+
+\end_inset
+
+T.
+ R.
+ Fischer, 
+\begin_inset Quotes eld
+\end_inset
+
+A Pyramid Vector Quantizer
+\begin_inset Quotes erd
+\end_inset
+
+, in
+\emph on
+ IEEE Trans.
+ on Information Theory
+\emph default
+, Vol.
+ 32, 1986, pp.
+ 568-583.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "FPC"
+
+\end_inset
+
+J.
+ P.
+ Ashley, E.
+ M.
+ Cruz-Zeno, U.
+ Mittal, and W.
+ Peng, 
+\begin_inset Quotes eld
+\end_inset
+
+Wideband Coding of Speech Using a Scalable Pulse Codebook,
+\begin_inset Quotes erd
+\end_inset
+
+ in
+\emph on
+ Proc.
+ IEEE Workshop on Speech Coding
+\emph default
+, 2000, pp.
+ 148–15.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "RFC6716"
+
+\end_inset
+
+Valin, J.-M., Vos.
+ K., Terriberry, T.B., 
+\begin_inset Quotes eld
+\end_inset
+
+Definition of the Opus codec
+\begin_inset Quotes erd
+\end_inset
+
+, RFC 6716, Internet Engineering Task Force, 2012.
+\end_layout
+
+\end_body
+\end_document

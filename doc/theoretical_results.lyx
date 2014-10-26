@@ -1,0 +1,786 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 3cm
+\topmargin 3cm
+\rightmargin 3cm
+\bottommargin 3cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Jmspeex' Journal of Dubious Theoretical Results
+\end_layout
+
+\begin_layout Abstract
+This is a log of theoretical calculations and approximations that are used
+ in some of the Daala code.
+ Some approximations are likely to be too coarse, some assumptions may not
+ correspond to the observable universe and some calculations may just be
+ plain wrong.
+ You have been warned.
+\end_layout
+
+\begin_layout Part
+Relationship Between 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $Q$
+\end_inset
+
+ in RDO
+\end_layout
+
+\begin_layout Standard
+When using a high-rate scalar quantizer, the distortion is given by
+\begin_inset Formula 
+\[
+D=\frac{Q^{2}}{12}\ ,
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $Q$
+\end_inset
+
+ is the quantizer's interval between two levels (not the maximum error like
+ in some other work).
+ The rate required to code the quantized values (assuming round-to-nearest)
+ is
+\begin_inset Formula 
+\[
+R=-\log_{2}Q+C
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $C$
+\end_inset
+
+ is a constant that does not depend on Q.
+ Starting from a known 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ we want to find the quantization interval 
+\begin_inset Formula $Q$
+\end_inset
+
+ that minimizes the rate-distortion curve, so
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial}{\partial Q}\left(D+\lambda R\right) & =0\\
+\frac{\partial}{\partial Q}\left(\frac{Q^{2}}{12}-\lambda\log_{2}Q-\lambda C\right) & =0\\
+\frac{Q}{6}-\frac{\lambda}{Q\log2} & =0\\
+Q & =\sqrt{\frac{6\lambda}{\log2}}
+\end{align*}
+
+\end_inset
+
+Or, if 
+\begin_inset Formula $Q$
+\end_inset
+
+ is known, then
+\begin_inset Formula 
+\[
+\lambda=\frac{Q^{2}\log2}{6}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Quantization threshold
+\end_layout
+
+\begin_layout Standard
+When we have a value between 0 and 1 and consider whether to round up or
+ down, we can compute the optimal decision threshold 
+\begin_inset Formula $x$
+\end_inset
+
+ for which the RD cost for the decision is equal
+\begin_inset Formula 
+\[
+x^{2}+\lambda R_{0}=\left(1-x\right)^{2}+\lambda R_{1}\ ,
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+ and 
+\begin_inset Formula $R_{1}$
+\end_inset
+
+ are the costs for coding a zero and a one, respectively.
+ Solving for 
+\begin_inset Formula $x$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\begin{align*}
+x^{2}+\lambda R_{0} & =\left(1-x\right)^{2}+\lambda R_{1}\\
+x^{2}+\lambda R_{0} & =x^{2}-2x+1+\lambda R_{1}\\
+2x & =1+\lambda\left(R_{1}-R_{0}\right)\\
+x & =\frac{1}{2}+\frac{\lambda\Delta R}{2}\ ,
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\Delta R=R_{1}-R_{0}$
+\end_inset
+
+.
+ In other words, it's like round-to-nearest, but with an additional bias
+ of 
+\begin_inset Formula $\lambda\Delta R/2$
+\end_inset
+
+ towards zero.
+ 
+\end_layout
+
+\begin_layout Part
+Rate-Distortion Analysis of a Quantized Laplace Distribution
+\end_layout
+
+\begin_layout Standard
+Here we assume that the quantization step size has already been taken into
+ account and that 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ is the normalized standard deviation of a DCT coefficient.
+ The post-quantization distribution of a Laplace-distributed variable with
+ non-zero quantization threshold 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is:
+\begin_inset Formula 
+\[
+p\left(n\right)=\begin{cases}
+1-r^{\theta} & n=0\\
+r^{\theta}\left(1-r\right)r^{n-1} & n>0
+\end{cases}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\theta=\frac{1}{2}$
+\end_inset
+
+ for round-to-nearest and 
+\begin_inset Formula $r=e^{-\sqrt{2}/\sigma}$
+\end_inset
+
+.
+ The entropy (rate) 
+\begin_inset Formula $R$
+\end_inset
+
+ of the quantized Laplace distribution is:
+\begin_inset Formula 
+\[
+R=\overset{\mathrm{sign}}{\overbrace{r^{\theta}}}+\overset{\mathrm{non-zero}}{\overbrace{H\left(r^{\theta}\right)}}+\overset{\mathrm{tail}}{\overbrace{\frac{r^{\theta}H\left(r\right)}{1-r}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+D(r) & =-\log r\left(\int_{0}^{\theta}x^{2}r^{x}dx+\sum_{k=1}^{\infty}\int_{\theta-1}^{\theta}x^{2}r^{k}r^{x}dx\right)\\
+ & =I\left(r,\theta\right)-I\left(r,0\right)+\frac{r}{1-r}\left(I\left(r,\theta\right)-I\left(r,\theta-1\right)\right)
+\end{align*}
+
+\end_inset
+
+where
+\begin_inset Formula 
+\begin{align*}
+I\left(r,x\right) & =-\log r\int x^{2}r^{x}dx\\
+ & =r^{x}\frac{2x\log r-x^{2}\log^{2}r-2}{\log^{2}r}+C
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ is much smaller than the quantization step size (everything quantizes to
+ zero), then the distortion is simply 
+\begin_inset Formula $\sigma^{2}$
+\end_inset
+
+ and when 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ is very large (flat distribution), then the distortion is that of a scalar
+ quantizer: 
+\begin_inset Formula $1/12$
+\end_inset
+
+.
+ So in the general case we can approximate with
+\begin_inset Formula 
+\[
+D=\min\left(\sigma^{2},\frac{1}{12}\right)
+\]
+
+\end_inset
+
+which tends to overestimate 
+\begin_inset Formula $D$
+\end_inset
+
+ in the region where 
+\begin_inset Formula $\sigma^{2}$
+\end_inset
+
+ is close to 
+\begin_inset Formula $1/12$
+\end_inset
+
+.
+ Assuming high-rate RDO, we have 
+\begin_inset Formula 
+\[
+\lambda=\frac{Q^{2}\log(2)}{6}=\frac{\log(2)}{6}\ .
+\]
+
+\end_inset
+
+The total RD-cost (expressed as a rate) becomes
+\begin_inset Formula 
+\[
+R+\frac{D}{\lambda}=r^{\theta}+H\left(r^{\theta}\right)+\frac{r^{\theta}H\left(r\right)}{1-r}+\min\left(\frac{6\sigma^{2}}{\log(2)},\frac{1}{2\log(2)}\right)
+\]
+
+\end_inset
+
+This cost function can be approximated by the (smoother) cost function
+\begin_inset Formula 
+\[
+C=\frac{1}{2}\log_{2}\left(1+\left(6.33\sigma\right)^{2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+PVQ Distortion
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\mathbf{X}=g\mathbf{z}$
+\end_inset
+
+ and 
+\begin_inset Formula $\hat{\mathbf{X}}=\hat{g}\hat{\mathbf{z}}$
+\end_inset
+
+ be the unquantized and quantized coefficient vector, respectively.
+ The quantization distortion is 
+\begin_inset Formula 
+\begin{align}
+D & =\left(\mathbf{X}-\hat{\mathbf{X}}\right)^{T}\left(\mathbf{X}-\hat{\mathbf{X}}\right)\nonumber \\
+ & =\mathbf{X}^{T}\mathbf{X}+\hat{\mathbf{X}}^{T}\hat{\mathbf{X}}-2\hat{\mathbf{X}}^{T}\mathbf{X}\nonumber \\
+ & =g^{2}+\hat{g}^{2}-2g\hat{g}\mathbf{z}\hat{\mathbf{z}}\nonumber \\
+ & =\left(g-\hat{g}\right)^{2}+2g\hat{g}-2g\hat{g}\mathbf{z}\hat{\mathbf{z}}\nonumber \\
+ & =\left(g-\hat{g}\right)^{2}+g\hat{g}\left(2-2\mathbf{z}\hat{\mathbf{z}}\right)\ .\label{eq:distance_v1}
+\end{align}
+
+\end_inset
+
+Let 
+\begin_inset Formula $D_{z}$
+\end_inset
+
+ be the distance between 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\mathbf{z}$
+\end_inset
+
+ and 
+\begin_inset Formula $\hat{\mathbf{z}}$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{align}
+D_{z} & =\left(\mathbf{z}-\hat{\mathbf{z}}\right)^{T}\left(\mathbf{z}-\hat{\mathbf{z}}\right)\nonumber \\
+ & =2-2\mathbf{z}^{T}\hat{\mathbf{z}}\ .\label{eq:distance-Dz}
+\end{align}
+
+\end_inset
+
+We can then rewrite 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:distance_v1"
+
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{equation}
+D=\left(g-\hat{g}\right)^{2}+g\hat{g}D_{z}\ ,\label{eq:pvq_distortion}
+\end{equation}
+
+\end_inset
+
+which separates the gain quantization from the quantization of the unit
+ vector 
+\begin_inset Formula $\mathbf{z}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Part
+Distortion from theta PVQ
+\end_layout
+
+\begin_layout Standard
+Let the normalized theta-PVQ vector be 
+\begin_inset Formula 
+\[
+\mathbf{z}=\left[\begin{array}{c}
+\cos\theta\\
+\mathbf{x}\sin\theta
+\end{array}\right]\ ,
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+ is the unit-vector coded with the PVQ quantizer, the distortion 
+\begin_inset Formula $D$
+\end_inset
+
+ between the unquantized 
+\begin_inset Formula $\mathbf{z}$
+\end_inset
+
+ and its quantized version 
+\begin_inset Formula $\hat{\mathbf{z}}$
+\end_inset
+
+ is
+\begin_inset Formula 
+\begin{align}
+D_{z} & =\left(\mathbf{z}-\hat{\mathbf{z}}\right)^{T}\left(\mathbf{z}-\hat{\mathbf{z}}\right)\nonumber \\
+ & =\left(\cos\theta-\cos\hat{\theta}\right)^{2}+\left(\mathbf{x}\sin\theta-\hat{\mathbf{x}}\sin\hat{\theta}\right)^{T}\left(\mathbf{x}\sin\theta-\hat{\mathbf{x}}\sin\hat{\theta}\right)\nonumber \\
+ & =\cos^{2}\theta-2\cos\theta\cos\hat{\theta}+\cos^{2}\hat{\theta}+\sin^{2}\theta+\sin^{2}\hat{\theta}-2\sin\theta\sin\hat{\theta}\mathbf{x}^{T}\hat{\mathbf{x}}\nonumber \\
+ & =2-2\cos\theta\cos\hat{\theta}-2\sin\theta\sin\hat{\theta}\mathbf{x}^{T}\hat{\mathbf{x}}\ .\label{eq:distortion-1}
+\end{align}
+
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+Using the identity 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:distance-Dz"
+
+\end_inset
+
+, we can then rewrite 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:distortion-1"
+
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{align}
+D_{z} & =2-2\cos\theta\cos\hat{\theta}-\sin\theta\sin\hat{\theta}\left(2-D_{x}\right)\nonumber \\
+ & =2-2\cos\left(\theta-\hat{\theta}\right)+\sin\theta\sin\hat{\theta}D_{x}\nonumber \\
+ & =D_{\theta}+\sin\theta\sin\hat{\theta}D_{x}\ ,\label{eq:distortion-final}
+\end{align}
+
+\end_inset
+
+where 
+\begin_inset Formula $D_{\theta}=2-2\cos\left(\theta-\hat{\theta}\right)$
+\end_inset
+
+ is the mean square error due to quantizing 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+ So essentially, the total error is the sum of the error due to quantization
+ of 
+\begin_inset Formula $\theta$
+\end_inset
+
+ and the error in the PVQ quantization assuming a radius that's the geometric
+ mean of the quantized and unquantized radius.
+\end_layout
+
+\begin_layout Standard
+Putting 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:distortion-final"
+
+\end_inset
+
+ into 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:pvq_distortion"
+
+\end_inset
+
+, we obtain
+\begin_inset Formula 
+\begin{equation}
+D=\left(g-\hat{g}\right)^{2}+g\hat{g}\left(D_{\theta}+\sin\theta\sin\hat{\theta}D_{x}\right)\ .\label{eq:total_pvq_theta_dist}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+Biorthogonality and quantization noise
+\end_layout
+
+\begin_layout Standard
+A biorthogonal transform defined as 
+\begin_inset Formula 
+\[
+\mathbf{H}\mathbf{G}^{T}=I
+\]
+
+\end_inset
+
+where the columns of 
+\begin_inset Formula $\mathbf{G}$
+\end_inset
+
+ are the analysis basis functions and the columns of 
+\begin_inset Formula $\mathbf{H}$
+\end_inset
+
+ are the columns of the synthesis basis functions.
+ We define the diagonal matrix 
+\begin_inset Formula $\mathbf{S}$
+\end_inset
+
+ such that the diagonal elements 
+\begin_inset Formula $s_{i,i}=\sqrt{\mathbf{h}_{i}^{T}\mathbf{h}_{i}}$
+\end_inset
+
+ are the magnitudes of the synthesis basis functions.
+ For an input vector 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+, the quantization process can be modeled as adding an uncorrelated noise
+ vector 
+\begin_inset Formula $\mathbf{n}$
+\end_inset
+
+ such that the reconstruction 
+\begin_inset Formula $\mathbf{y}$
+\end_inset
+
+ is
+\begin_inset Formula 
+\begin{align*}
+\mathbf{y} & =\mathbf{H}\mathbf{S}^{-1}\left(\mathbf{S}\mathbf{G}^{T}\mathbf{x}+\mathbf{n}\right)\\
+ & =\mathbf{x}+\mathbf{H}\mathbf{S}^{-1}\mathbf{n}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The distortion due to quantization is 
+\begin_inset Formula 
+\begin{align*}
+D & =\left(\mathbf{x}-\mathbf{y}\right)^{T}\left(\mathbf{x}-\mathbf{y}\right)\\
+ & =\left(\mathbf{H}\mathbf{S}^{-1}\mathbf{n}\right)^{T}\mathbf{H}\mathbf{S}^{-1}\mathbf{n}\\
+ & =\mathbf{n}^{T}\left(\mathbf{S}^{T}\right)^{-1}\mathbf{H}^{T}\mathbf{H}\mathbf{S}^{-1}\mathbf{n}\\
+ & =\mathbf{n}^{T}\mathbf{R}\mathbf{n}
+\end{align*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathbf{R}=\left(\mathbf{S}^{-1}\right)^{T}\mathbf{H}^{T}\mathbf{H}\mathbf{S}^{-1}$
+\end_inset
+
+.
+ Rewriting 
+\begin_inset Formula $D$
+\end_inset
+
+ as a summation, we have 
+\begin_inset Formula 
+\[
+D=\sum_{i}\sum_{j}r_{i,i}n_{i}n_{j}
+\]
+
+\end_inset
+
+This is different from the orthonormal case where
+\begin_inset Formula 
+\[
+D=\sum_{i}n_{i}^{2}
+\]
+
+\end_inset
+
+due to 
+\begin_inset Formula $\mathbf{R}$
+\end_inset
+
+ being the identity matrix (also known as Parseval's theorem).
+ 
+\end_layout
+
+\begin_layout Standard
+Since the noise is uncorrelated and since the diagonal of 
+\begin_inset Formula $\mathbf{R}$
+\end_inset
+
+ is equal to 1, then the expectation of the noise power is 
+\begin_inset Formula $E\{D\}=E\{\mathbf{n}^{T}\mathbf{n}\}$
+\end_inset
+
+, like in the orthonormal case.
+ This shows that multiplying each transformed coefficient 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ by the magnitude of the corresponding synthesis function 
+\begin_inset Formula $s_{i,i}$
+\end_inset
+
+ prior to quantization is sufficient to obtain the same 
+\emph on
+average
+\emph default
+ noise behaviour.
+ In practice, it 
+\emph on
+may
+\emph default
+ be possible to do some clever trick in the quantization search to obtain
+ a smaller distortion than the orthonormal case, partially compensating
+ for the entropy cost of the biorthogonal transform.
+\end_layout
+
+\begin_layout Standard
+The average distortion we find also supports the use of the squared magnitude
+ of the synthesis basis function in the computation of the coding gain.
+\end_layout
+
+\begin_layout Part
+Temporal RDO
+\end_layout
+
+\begin_layout Standard
+Let's assume two sequences of 
+\begin_inset Formula $N$
+\end_inset
+
+ samples each being quantized with a resolution 
+\begin_inset Formula $Q$
+\end_inset
+
+.
+ One sequence is constant, while the other isn't.
+ The total distortion will be
+\begin_inset Formula 
+\[
+D=\frac{2NQ^{2}}{12}\ .
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If we assume that we can skip encoding of the constant sequence at no cost
+ and shift 
+\begin_inset Formula $b$
+\end_inset
+
+ bits away from the variable sequence to the constant one, it costs only
+ 
+\begin_inset Formula $b/N$
+\end_inset
+
+ bits per sample on the variable sequence and we get a distortion
+\begin_inset Formula 
+\begin{align*}
+D & =N\frac{\left(2^{-b}Q\right)^{2}}{12}+N\frac{\left(2^{b/N}Q\right)^{2}}{12}\\
+ & =\frac{NQ^{2}}{12}\left(2^{-2b}+2^{2b/N}\right)
+\end{align*}
+
+\end_inset
+
+We solve for 
+\begin_inset Formula $\partial D/\partial b=0$
+\end_inset
+
+ to minimize distortion:
+\begin_inset Formula 
+\begin{gather*}
+\frac{\partial D}{\partial b}=\frac{NQ^{2}}{12}\left(-2b\log22^{-2b}+\frac{2b\log2}{N}2^{2b/N}\right)=0\\
+\frac{2b2^{2b/N}\log2}{N}=2b2^{-2b}\log2\\
+\frac{2^{2b/N}}{N}=2^{-2b}
+\end{gather*}
+
+\end_inset
+
+Taking the base-2 log on both side:
+\begin_inset Formula 
+\begin{align*}
+2b/N-\log_{2}N & =-2b\\
+\frac{2b\left(N+1\right)}{N} & =\log_{2}N\\
+b & =\frac{N\log_{2}N}{2\left(N+1\right)}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Slowly varying sequence
+\end_layout
+
+\begin_layout Standard
+Let's see what happens with a slowly varying sequence rather than a constant
+ one...
+\end_layout
+
+\end_body
+\end_document

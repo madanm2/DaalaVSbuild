@@ -1,0 +1,693 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Energy Preservation in PVQ-Based Video Coding
+\end_layout
+
+\begin_layout Author
+Jean-Marc Valin
+\end_layout
+
+\begin_layout Abstract
+This paper starts with an introduction and ends with a conclusion
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+This mini-paper describes a proposal for adapting the CELT energy conservation
+ principle to video coding based on a pyramid vector quantizer (PVQ).
+ One potential advantage of conserving energy of the AC coefficients in
+ video coding is preserving textures rather than low-passing them.
+ Also, by introducing a fixed-resolution PVQ-type quantizer, we automatically
+ gain a simple activity masking model.
+\end_layout
+
+\begin_layout Standard
+The main challenge of adapting this scheme to video is that we have a good
+ prediction (the reference frame), so we are essentially starting from a
+ point that is already on the PVQ hyper-sphere, rather than at the origin
+ like in CELT.
+ Other challenges are the introduction of a quantization matrix and the
+ fact that we want the reference (motion predicted) data to perfectly correspond
+ to one of the entries in our codebook.
+\end_layout
+
+\begin_layout Section
+Pyramid Vector Quantization and Spherical Quantization
+\end_layout
+
+\begin_layout Standard
+A pyramid vector quantization (PVQ) codebook [Fisher] of dimension 
+\begin_inset Formula $N$
+\end_inset
+
+ is constructed as the sum of 
+\begin_inset Formula $K$
+\end_inset
+
+ signed unit pulses:
+\begin_inset Formula 
+\[
+\mathbf{y}\in\mathbb{Z}^{N}:\sum_{i=0}^{N-1}\left|y_{i}\right|=K\ .
+\]
+
+\end_inset
+
+In the Opus codec [RFC6716], the PVQ codebook is used in the context of
+ spherical quantization, with the gain encoded separately from a unit-norm
+ vector derived from a PVQ codeword 
+\begin_inset Formula $\mathbf{y}/\left\Vert \mathbf{y}\right\Vert $
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Application to still image coding
+\end_layout
+
+\begin_layout Standard
+In order to apply PVQ-based gain-shape quantization to DCT coefficients,
+ we need to first divide the coefficient into 
+\emph on
+bands
+\emph default
+.
+ For 4x4 blocks, a single band is used for all AC coefficients, while 8x8
+ and 16x16 blocks are split into 4 and 7 bands, respectively (Fig.
+ XX).
+\end_layout
+
+\begin_layout Section
+Encoder
+\end_layout
+
+\begin_layout Standard
+Let vector 
+\begin_inset Formula $\mathbf{x}_{d}$
+\end_inset
+
+ denote the (pre-normalization) DCT band to be coded in the current block
+ and vector 
+\begin_inset Formula $\mathbf{r}_{d}$
+\end_inset
+
+ denote the corresponding reference after motion compensation, the encoder
+ computes and encodes the 
+\begin_inset Quotes eld
+\end_inset
+
+band gain
+\begin_inset Quotes erd
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+g=\sqrt{\mathbf{x}_{d}^{T}\mathbf{x}_{d}}\,.\label{eq:band-energy}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The normalized band is computed as 
+\begin_inset Formula 
+\begin{equation}
+\mathbf{x}=\frac{\mathbf{x}_{d}}{g}\,,\label{eq:normalized-x}
+\end{equation}
+
+\end_inset
+
+with the normalized reference 
+\begin_inset Formula $\mathbf{r}$
+\end_inset
+
+ similarly computed based on 
+\begin_inset Formula $\mathbf{r}_{d}$
+\end_inset
+
+.
+ The encoder then finds the position and sign of the maximum value in 
+\begin_inset Formula $\mathbf{r}$
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align}
+m & =\underset{i}{\mathrm{argmax}}\left|r_{i}\right|\label{eq:reflection-argmax}\\
+s & =\mathrm{sgn}\left(r_{m}\right)\label{eq:reflection-sign}
+\end{align}
+
+\end_inset
+
+and computes the Householder reflection that reflects 
+\begin_inset Formula $\mathbf{r}$
+\end_inset
+
+ to 
+\begin_inset Formula $-s\mathbf{e}_{m}$
+\end_inset
+
+.
+ The reflection vector is given by
+\begin_inset Formula 
+\begin{equation}
+\mathbf{v}=\mathbf{r}+s\mathbf{e}_{m}\,.\label{eq:reflection-vector}
+\end{equation}
+
+\end_inset
+
+The encoder reflects the normalized band to find
+\begin_inset Formula 
+\begin{equation}
+\mathbf{z}=\mathbf{x}-\frac{2}{\mathbf{v}^{T}\mathbf{v}}\mathbf{v}\left(\mathbf{v}^{T}\mathbf{x}\right)\,.\label{eq:reflection}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The similarity between the current band and the reference band is represented
+ by the angle (assuming no quantization)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\theta=\arccos\frac{-sz_{m}}{\left\Vert \mathbf{z}\right\Vert }\ .\label{eq:unquant-theta}
+\end{equation}
+
+\end_inset
+
+Let 
+\begin_inset Formula $N$
+\end_inset
+
+ be the number of dimensions in 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $K$
+\end_inset
+
+ be the number of pulses in our codebooks, we search for the codebook entry
+ 
+\begin_inset Formula 
+\begin{equation}
+q=\underset{i}{\mathrm{argmax}}\frac{\mathbf{p}_{i}^{T}\left(\mathbf{z}-z_{m}\mathbf{e}_{m}\right)}{\sqrt{\mathbf{p}_{i}^{T}\mathbf{p}_{i}}}\,,\label{eq:quantization}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathbf{p}_{i}$
+\end_inset
+
+ is the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ combination of magnitudes and signs that satisfies 
+\begin_inset Formula $\left\Vert \mathbf{p}_{i}\right\Vert _{L1}=K$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+Decoder
+\end_layout
+
+\begin_layout Standard
+The decoder starts by decoding the codebook entry 
+\begin_inset Formula $\mathbf{p}_{q}$
+\end_inset
+
+ and uses it to reconstruct the unit-norm reflected band as
+\begin_inset Formula 
+\begin{equation}
+\hat{\mathbf{z}}=-s\cos\hat{\theta}\mathbf{e}_{m}+\sin\hat{\theta}\frac{\mathbf{p}_{q}}{\sqrt{\mathbf{p}_{q}^{T}\mathbf{p}_{q}}}\,.\label{eq:reconstruct}
+\end{equation}
+
+\end_inset
+
+Because the decoder has access to exactly the same reference as the encoder,
+ it is able to apply 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:reflection-argmax"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:reflection-vector"
+
+\end_inset
+
+ to obtain the same 
+\begin_inset Formula $\mathbf{v}$
+\end_inset
+
+ as used in the encoder.
+ The decoded normalized band is 
+\begin_inset Formula 
+\begin{equation}
+\hat{\mathbf{x}}=\hat{\mathbf{z}}-\frac{2}{\mathbf{v}^{T}\mathbf{v}}\mathbf{v}\left(\mathbf{v}^{T}\hat{\mathbf{x}}\right)\,.\label{eq:decoder-reflection}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The renormalized band is computed by taking into account the quantization
+ resolution:
+\begin_inset Formula 
+\begin{equation}
+\hat{\mathbf{x}}_{d}=\hat{g}\hat{\mathbf{x}}\,.\label{eq:decoded-band}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Coding Resolution
+\end_layout
+
+\begin_layout Standard
+It is desirable for a single quality parameter to control 
+\begin_inset Formula $K$
+\end_inset
+
+ and the resolution of gain and angle.
+ That quality parameter should also take into account activity masking to
+ some extent.
+ According to Jason Garrett-Glaser, x264's activity masking uses a resolution
+ proportional to 
+\begin_inset Formula $g^{2\alpha}$
+\end_inset
+
+, with 
+\begin_inset Formula $\alpha=0.173$
+\end_inset
+
+.
+ We can derive a scalar quantizer based on quantization index 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ that follows this resolution:
+\begin_inset Formula 
+\begin{align}
+\frac{d\hat{g}}{d\hat{\gamma}} & =Q\hat{g}^{2\alpha}\nonumber \\
+\hat{g}^{-2\alpha}d\hat{g} & =Qd\hat{\gamma}\nonumber \\
+\frac{\hat{g}^{1-2\alpha}}{1-2\alpha} & =Q\hat{\gamma}\nonumber \\
+\hat{g} & =\left(\left(1-2\alpha\right)Q\hat{\gamma}\right)^{1/\left(1-2\alpha\right)}\nonumber \\
+\hat{g} & =Q_{g}\hat{\gamma}^{1/\left(1-2\alpha\right)}\label{eq:gain-scalar-quantization}
+\end{align}
+
+\end_inset
+
+where 
+\begin_inset Formula $Q_{g}=\left(\left(1-2\alpha\right)Q\right)^{1/\left(1-2\alpha\right)}$
+\end_inset
+
+ is the companded gain resolution and 
+\begin_inset Quotes eld
+\end_inset
+
+master
+\begin_inset Quotes erd
+\end_inset
+
+ quality parameter.
+ Let 
+\begin_inset Formula $\beta=1/\left(1-2\alpha\right)$
+\end_inset
+
+, the MSE-optimal angle quantization resolution is the one that matches
+ the gain resolution.
+ Considering the distance to be approximately equal to the arc distance,
+ we have
+\begin_inset Formula 
+\begin{equation}
+Q_{\theta}=\frac{d\hat{g}/d\hat{\gamma}}{\hat{g}}=\frac{Q_{g}\beta\hat{\gamma}^{\beta-1}}{Q_{g}\hat{\gamma}^{\beta}}=\frac{\beta}{\hat{\gamma}}\ .\label{eq:theta-quantization-step}
+\end{equation}
+
+\end_inset
+
+Alternatively, the number of quantization 
+\emph on
+steps
+\emph default
+ for 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+S_{\theta}=\frac{\pi\hat{\gamma}}{2\beta}\ .
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Setting 
+\begin_inset Formula $K$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Using an 
+\emph on
+i.i.d.
+
+\emph default
+ Laplace source normalized to unit norm, we simulated quantization with
+ different values of 
+\begin_inset Formula $N$
+\end_inset
+
+ and 
+\begin_inset Formula $K$
+\end_inset
+
+.
+ The resulting distortion is shown in Fig.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:PVQ-distortion-N-K"
+
+\end_inset
+
+.
+ The asymptotic distortion for large values of 
+\begin_inset Formula $K$
+\end_inset
+
+ is approximately
+\begin_inset Formula 
+\[
+D_{pvq}=\frac{\left(N-1\right)^{2}+C_{K}\left(N-1\right)}{24K^{2}}\ ,
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $C_{K}=4.2.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+centering{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename dist_vs_K.eps
+	lyxscale 50
+	width 70col%
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+PVQ distortion as a function of 
+\begin_inset Formula $N$
+\end_inset
+
+ and 
+\begin_inset Formula $K$
+\end_inset
+
+ for a Laplace-distributed source
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:PVQ-distortion-N-K"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The distortion due to scalar quantization of the gain is (asymptotically)
+\begin_inset Formula 
+\begin{align*}
+D_{g} & =\frac{1}{12}\left(d\hat{g}/d\hat{\gamma}\right)^{2}\\
+ & =\frac{\beta^{2}Q_{g}^{2}\hat{\gamma}^{2\beta-2}}{12}\ .
+\end{align*}
+
+\end_inset
+
+To achieve uniform distortion along all dimensions, the distortion due to
+ the 
+\begin_inset Formula $N-2$
+\end_inset
+
+ PVQ degrees of freedom must be 
+\begin_inset Formula $N-2$
+\end_inset
+
+ times greater than that due to quantizing the gain, so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\left(N-2\right)D_{g} & =\left(\hat{g}\sin\hat{\theta}\right)^{2}D_{pvq}\\
+\frac{\left(N-2\right)\beta^{2}Q_{g}^{2}\hat{\gamma}^{2\beta-2}}{12} & =\left(Q_{g}\hat{\gamma}^{\beta}\sin\hat{\theta}\right)^{2}\frac{\left(N-2\right)^{2}+C_{K}\left(N-2\right)}{24K^{2}}\\
+\left(N-2\right)\beta^{2} & =\frac{\hat{\gamma}^{2}\sin^{2}\hat{\theta}\left[\left(N-2\right)^{2}+C_{K}\left(N-2\right)\right]}{2K^{2}}\\
+K & =\frac{\hat{\gamma}\sin\hat{\theta}}{\beta}\sqrt{\frac{N+C_{K}-2}{2}}
+\end{align*}
+
+\end_inset
+
+In this way, we can avoid having to signal 
+\begin_inset Formula $K$
+\end_inset
+
+ because it is determined only by 
+\begin_inset Formula $\hat{\gamma}$
+\end_inset
+
+ and 
+\begin_inset Formula $\hat{\theta}$
+\end_inset
+
+, both of which are available to the decoder.
+ 
+\end_layout
+
+\begin_layout Section
+Bi-Prediction
+\end_layout
+
+\begin_layout Standard
+We can use this scheme for bi-prediction by introducing a second 
+\begin_inset Formula $\theta$
+\end_inset
+
+ parameter.
+ For the case of two (normalized) reference frames 
+\begin_inset Formula $\mathbf{r}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{r}_{2}$
+\end_inset
+
+, we introduce 
+\begin_inset Formula $\mathbf{s}_{1}=\left(\mathbf{r}_{1}+\mathbf{r}_{2}\right)/2$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{s}_{2}=\left(\mathbf{r}_{1}-\mathbf{r}_{2}\right)/2$
+\end_inset
+
+.
+ We start by using 
+\begin_inset Formula $\mathbf{s}_{1}$
+\end_inset
+
+ as a reference, apply the Householder reflection to both 
+\begin_inset Formula $\mathbf{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{s}_{2}$
+\end_inset
+
+, and evaluate 
+\begin_inset Formula $\theta_{1}$
+\end_inset
+
+.
+ From there, we derive a second Householder reflection from the reflected
+ version of 
+\begin_inset Formula $\mathbf{s}_{2}$
+\end_inset
+
+ and apply it to 
+\begin_inset Formula $\mathbf{x}_{r}$
+\end_inset
+
+.
+ The result is that the 
+\begin_inset Formula $\theta_{2}$
+\end_inset
+
+ parameter controls how the current image compares to the two reference
+ images.
+ It should even be possible to use this in the case where the two references
+ are before the frame being encoded, i.e.
+ P frames based on two parents.
+ This might help for fades.
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+While it seems like a good idea, we're still experimenting with the details.
+\end_layout
+
+\end_body
+\end_document

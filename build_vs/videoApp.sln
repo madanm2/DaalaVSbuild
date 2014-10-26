@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DaalaLib", "build_Lib\DaalaLib.vcxproj", "{676D4072-6540-44F0-B823-A7184885E093}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "videoDec", "videoDec.vcxproj", "{3AA01500-8563-4A13-B485-83A34CCD805D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{676D4072-6540-44F0-B823-A7184885E093} = {676D4072-6540-44F0-B823-A7184885E093}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "videoEnc", "videoEnc.vcxproj", "{CB7A9062-DBEC-4036-894D-A5759878A213}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{676D4072-6540-44F0-B823-A7184885E093}.Debug|Win32.ActiveCfg = Debug|Win32
+		{676D4072-6540-44F0-B823-A7184885E093}.Debug|Win32.Build.0 = Debug|Win32
+		{676D4072-6540-44F0-B823-A7184885E093}.Release|Win32.ActiveCfg = Release|Win32
+		{676D4072-6540-44F0-B823-A7184885E093}.Release|Win32.Build.0 = Release|Win32
+		{3AA01500-8563-4A13-B485-83A34CCD805D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3AA01500-8563-4A13-B485-83A34CCD805D}.Debug|Win32.Build.0 = Debug|Win32
+		{3AA01500-8563-4A13-B485-83A34CCD805D}.Release|Win32.ActiveCfg = Release|Win32
+		{3AA01500-8563-4A13-B485-83A34CCD805D}.Release|Win32.Build.0 = Release|Win32
+		{CB7A9062-DBEC-4036-894D-A5759878A213}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CB7A9062-DBEC-4036-894D-A5759878A213}.Debug|Win32.Build.0 = Debug|Win32
+		{CB7A9062-DBEC-4036-894D-A5759878A213}.Release|Win32.ActiveCfg = Release|Win32
+		{CB7A9062-DBEC-4036-894D-A5759878A213}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
